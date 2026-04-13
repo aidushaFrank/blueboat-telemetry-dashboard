@@ -1,0 +1,30 @@
+services:
+  influxdb:
+    image: influxdb:2.7
+    container_name: influxdb_qgc
+    ports:
+      - "8086:8086"
+    env_file:
+      - .env
+    volumes:
+      - influxdb_data_qgc:/var/lib/influxdb2
+      - influxdb_config_qgc:/etc/influxdb2
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana_qgc
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    volumes:
+      - grafana_data_qgc:/var/lib/grafana
+      - ./provisioning:/etc/grafana/provisioning
+      - ./dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - influxdb
+
+volumes:
+  influxdb_data_qgc:
+  influxdb_config_qgc:
+  grafana_data_qgc:
