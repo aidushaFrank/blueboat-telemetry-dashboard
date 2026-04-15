@@ -1,203 +1,150 @@
-<<<<<<< HEAD
-QGC telemetry dashboard notes
+# qgc telemetry dashboard
 
+this repo is for my grafana + influxdb dashboard for cleaned qgroundcontrol telemetry.
 
-folder
+right now the dashboard shows:
 
-WSL path:
-/mnt/c/Users/kudai/OneDrive/Desktop/caltech/qgc-telemetry-dashboard
+* boat path on map
+* mission duration
+* total distance
+* battery voltage over time
+* speed over time
+* heading over time
+* altitude over time
 
-Windows path:
-C:\Users\kudai\OneDrive\Desktop\caltech\qgc-telemetry-dashboard
-main idea
+## project folder
 
+wsl path:
+`/mnt/c/Users/kudai/OneDrive/Desktop/caltech/qgc-telemetry-dashboard`
 
-Use cleaned QGC telemetry CSV.
+windows path:
+`C:\Users\kudai\OneDrive\Desktop\caltech\qgc-telemetry-dashboard`
 
-Import into Influx.
+## basic idea
 
-Open in Grafana.
+use cleaned qgc telemetry csv files, import them into influxdb, and visualize the run in grafana.
 
-Show map + speed + heading + relative altitude.
+## start / stop
 
+go to repo:
 
-
-go to repo
+```bash
 cd /mnt/c/Users/kudai/OneDrive/Desktop/caltech/qgc-telemetry-dashboard
+```
 
+start docker:
 
-docker commands
-start in background:
-
+```bash
 docker compose up -d
+```
 
-see logs if needed:
-docker compose logs -f
+stop docker:
 
-stop:
+```bash
 docker compose down
+```
 
-full reset if token / setup got messed up:
+full reset if setup gets weird:
 
+```bash
 docker compose down -v
 docker compose up -d
+```
 
-open pages
-InfluxDB: http://localhost:8086
+open pages:
 
-Grafana: http://localhost:3000
+* influxdb: `http://localhost:8086`
+* grafana: `http://localhost:3000`
 
+## python setup
 
+create venv if needed:
 
-If needed:
-
-cp .env.example .env
-Important: same token in both places.
-
-DOCKER_INFLUXDB_INIT_ADMIN_TOKEN
-
-INFLUX_TOKEN
-
-
-If I change token after containers were already created, I probably need:
-
-docker compose down -v
-docker compose up -d
-venv
-
-
-create if needed:
-
+```bash
 python3 -m venv .venv
+```
 
 turn on:
+
+```bash
 source .venv/bin/activate
+```
 
-turn off:
+install packages:
 
-deactivate if missing:
-
-sudo apt update
-sudo apt install python3-venv -y
-install packages inside venv:
-
+```bash
 python -m pip install -r requirements.txt
-env vars for importer
+```
 
+## env vars
 
-Python importer does not automatically read Docker stuff the way I want, so before running importer I need these in the same terminal:
+before running importers:
 
+```bash
 export INFLUX_ORG=caltech_lab
 export INFLUX_BUCKET=qgc_data
-export INFLUX_TOKEN=DLJLkCA1ZqRLtFplPcjuPEVPC_67khKtiJPnHv8kRMpOeUEyJS11VxEldzKd1VIfJGcVKoJqjEz8OQFGOfxD2Q==
-quick checks:
+export INFLUX_TOKEN=change
+```
 
-echo $INFLUX_ORG
-echo $INFLUX_BUCKET
-echo $INFLUX_TOKEN=DLJLkCA1ZqRLtFplPcjuPEVPC_67khKtiJPnHv8kRMpOeUEyJS11VxEldzKd1VIfJGcVKoJqjEz8OQFGOfxD2Q==
-run importer
+## run importers
 
+main telemetry importer:
 
-with venv on and env vars set:
-
+```bash
 python scripts/import_qgc_telemetry.py
+```
 
+battery importer:
 
+```bash
+python scripts/import_battery_telemetry.py
+```
 
+## main panels
 
-if still weird and repo is fresh, reset:
+* boat path
+* battery voltage
+* speed
+* heading
+* altitude
+* mission duration
+* total distance
 
-docker compose down -v
-docker compose up -d
-then export vars again and rerun importer.
+## useful queries
 
+### speed
 
-
-what the columns mean
-
-
-lat / lon
-GPS coordinates in decimal degrees
-
-use for map
-
-
-
-heading_deg
-compass direction
-
-0 = north, 90 = east, 180 = south, 270 = west
-
-best as line chart over time
-
-
-
-speed_xy
-cleaned formula is:
-
-sqrt(vx^2 + vy^2) / 100
-
-best as line chart over time
-
-
-
-alt_m
-meters
-
-came from GLOBAL_POSITION_INT.alt
-
-
-relative_alt_m
-meters
-
-relative to starting / home reference
-
-probably more useful to show than alt_m
-
-
-
-best panels
-
-
-
-Boat Path map
-
-Speed Over Time
-
-Heading Over Time
-
-Relative Altitude Over Time
-
-
-
-grafana queries
-
-
-speed
+```flux
 from(bucket: "qgc_data")
   |> range(start: 0)
   |> filter(fn: (r) => r._measurement == "qgc_telemetry")
   |> filter(fn: (r) => r.run == "gps_track_cleaned")
   |> filter(fn: (r) => r._field == "speed_xy")
-heading
+```
+
+### heading
+
+```flux
 from(bucket: "qgc_data")
   |> range(start: 0)
   |> filter(fn: (r) => r._measurement == "qgc_telemetry")
   |> filter(fn: (r) => r.run == "gps_track_cleaned")
   |> filter(fn: (r) => r._field == "heading_deg")
-alt_m
+```
+
+### altitude
+
+```flux
 from(bucket: "qgc_data")
   |> range(start: 0)
   |> filter(fn: (r) => r._measurement == "qgc_telemetry")
   |> filter(fn: (r) => r.run == "gps_track_cleaned")
   |> filter(fn: (r) => r._field == "alt_m")
-relative_alt_m
-from(bucket: "qgc_data")
-  |> range(start: 0)
-  |> filter(fn: (r) => r._measurement == "qgc_telemetry")
-  |> filter(fn: (r) => r.run == "gps_track_cleaned")
-  |> filter(fn: (r) => r._field == "relative_alt_m")
-map
+```
+
+### map
+
+```flux
 from(bucket: "qgc_data")
   |> range(start: 0)
   |> filter(fn: (r) => r._measurement == "qgc_telemetry")
@@ -205,146 +152,75 @@ from(bucket: "qgc_data")
   |> filter(fn: (r) => r._field == "lat" or r._field == "lon" or r._field == "speed_xy")
   |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
   |> keep(columns: ["_time", "lat", "lon", "speed_xy"])
-Geomap settings:
-
-Visualization = Geomap
-
-Location mode = Coords
-
-Latitude field = lat
-
-Longitude field = lon
-
-
-
-
-Easy fix while building panels:
-
-|> range(start: 0)
-
-
-This dashboard is from cleaned QGroundControl telemetry.
-
-Map is reconstructed from GPS.
-
-Time series show speed, heading, and vertical position over time.
-
-alt_m is autopilot / GPS reported altitude, not sonar bathymetry depth.
-
-
-
-quick workflow reminder
-
-
-normal session
-cd /mnt/c/Users/kudai/OneDrive/Desktop/caltech/qgc-telemetry-dashboard
-source .venv/bin/activate
-export INFLUX_ORG=caltech_lab
-export INFLUX_BUCKET=qgc_data
-export INFLUX_TOKEN=my_exact_token_here
-docker compose up -d
-after changing csv
-cd /mnt/c/Users/kudai/OneDrive/Desktop/caltech/qgc-telemetry-dashboard
-source .venv/bin/activate
-export INFLUX_ORG=caltech_lab
-export INFLUX_BUCKET=qgc_data
-export INFLUX_TOKEN=my_exact_token_here
-python scripts/import_qgc_telemetry.py
-finish
-docker compose down
-deactivate
-=======
-# qgc-telemetry-dashboard
-
-
-
-## Getting started
-
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-* [Create](https://docs.gitlab.com/user/project/repository/web_editor/#create-a-file) or [upload](https://docs.gitlab.com/user/project/repository/web_editor/#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
-
-```
-cd existing_repo
-git remote add origin https://gitlab.com/akudaibe-group/qgc-telemetry-dashboard.git
-git branch -M main
-git push -uf origin main
 ```
 
-## Integrate with your tools
+geomap settings:
 
-* [Set up project integrations](https://gitlab.com/akudaibe-group/qgc-telemetry-dashboard/-/settings/integrations)
+* visualization = geomap
+* location mode = coords
+* latitude field = lat
+* longitude field = lon
 
-## Collaborate with your team
+### battery voltage
 
-* [Invite team members and collaborators](https://docs.gitlab.com/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/user/project/merge_requests/creating_merge_requests/)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/user/project/issues/managing_issues/#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+```flux
+from(bucket: "qgc_data")
+  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
+  |> filter(fn: (r) => r._measurement == "qgc_battery")
+  |> filter(fn: (r) => r.run == "gps_track_cleaned")
+  |> filter(fn: (r) => r._field == "battery_voltage_v")
+  |> filter(fn: (r) => r.msg_type == "SYS_STATUS")
+```
 
-## Test and Deploy
+### mission duration
 
-Use the built-in continuous integration in GitLab.
+this is the version that worked for me, then i converted it to minutes in grafana transformations:
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/topics/autodevops/requirements/)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ci/environments/protected_environments/)
+```flux
+gps = from(bucket: "qgc_data")
+  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
+  |> filter(fn: (r) => r._measurement == "gps_track")
+  |> filter(fn: (r) => r.track == "gps_track_cleaned")
+  |> filter(fn: (r) => r._field == "lat")
 
-***
+first_time = gps |> first()
+last_time = gps |> last()
 
-# Editing this README
+union(tables: [first_time, last_time])
+  |> keep(columns: ["_time"])
+  |> sort(columns: ["_time"])
+  |> elapsed(unit: 1s)
+```
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+### total distance
 
-## Suggestions for a good README
+for total distance i calculated it separately from the cleaned gps points and used `1.93 km`
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+for the stat panel:
 
-## Name
-Choose a self-explaining name for your project.
+```flux
+import "array"
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+array.from(rows: [
+  {_time: now(), _value: 1.9326}
+])
+```
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+## notes
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+* this dashboard is from cleaned qgroundcontrol telemetry
+* map is reconstructed from gps
+* `alt_m` is autopilot / gps reported altitude, not sonar depth
+* battery was missing at first because i used the wrong tlog
+* once i found the correct tlog, battery voltage over time worked
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+## current status
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+right now this is a working prototype for telemetry review.
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+next things i could add later:
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
->>>>>>> 874f13449141597a03cb4c07534c89aaaed8b998
+* cleaner battery summary stats
+* live / near-real-time ingestion
+* more mission summary values
+* easier comparison between runs
