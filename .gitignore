@@ -1,4 +1,23 @@
+# local python environment
 .venv/
+venv/
 __pycache__/
-.env
 *.pyc
+
+# real secrets
+.env
+
+# private/raw data
+data/raw/
+data/private/
+data/real/
+*.tlog
+
+# docker volumes if local folders ever appear
+influxdb_data_qgc/
+influxdb_config_qgc/
+grafana_data_qgc/
+
+# system files
+.DS_Store
+Thumbs.db
