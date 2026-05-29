@@ -1,118 +1,196 @@
-# qgc telemetry dashboard
+# BlueBoat Telemetry Dashboard
 
-this repo is for my grafana + influxdb dashboard for cleaned qgroundcontrol telemetry.
+A Docker-based telemetry dashboard for visualizing cleaned QGroundControl telemetry data from BlueBoat missions.
 
-right now the dashboard shows:
+The project uses **InfluxDB** for time-series data storage and **Grafana** for dashboard visualization. The current version works with cleaned CSV telemetry files and sample mission data. Future development will focus on live or near-real-time telemetry ingestion.
 
-* boat path on map
-* mission duration
-* total distance
-* battery voltage over time
-* speed over time
-* heading over time
-* altitude over time
+## Current Features
 
-## project folder
+The dashboard currently visualizes:
 
-wsl path:
-`/mnt/c/Users/kudai/OneDrive/Desktop/caltech/qgc-telemetry-dashboard`
+* Boat path on a map
+* Mission duration
+* Total distance
+* Battery voltage over time
+* Speed over time
+* Heading over time
+* Altitude over time
 
-windows path:
-`C:\Users\kudai\OneDrive\Desktop\caltech\qgc-telemetry-dashboard`
+## Project Status
 
-## basic idea
+This repository contains a working prototype for telemetry review using cleaned QGroundControl data.
 
-use cleaned qgc telemetry csv files, import them into influxdb, and visualize the run in grafana.
+Current version:
 
-## start / stop
+* Runs locally with Docker Compose
+* Starts InfluxDB and Grafana containers
+* Imports cleaned telemetry CSV files into InfluxDB
+* Visualizes mission data in Grafana
+* Uses sample or cleaned data only
 
-go to repo:
+Future work:
 
-```bash
-cd /mnt/c/Users/kudai/OneDrive/Desktop/caltech/qgc-telemetry-dashboard
+* Add live or near-real-time telemetry ingestion
+* Add cleaner mission summary statistics
+* Support easier comparison between multiple runs
+* Add additional sensor streams such as conductivity and temperature
+* Improve documentation for team use during field deployments
+
+## Tech Stack
+
+* Docker
+* Docker Compose
+* InfluxDB 2.7
+* Grafana
+* Python
+* QGroundControl telemetry logs
+* Flux queries
+
+## Repository Structure
+
+```text
+.
+├── dashboards/                  # Grafana dashboard files
+├── data/                        # Cleaned or sample telemetry CSV files
+├── provisioning/                # Grafana datasource and dashboard provisioning
+│   ├── dashboards/
+│   └── datasources/
+├── scripts/                     # Python import scripts
+├── docker-compose.yml           # Docker setup for InfluxDB and Grafana
+├── requirements.txt             # Python dependencies
+├── .env.example                 # Example environment variables
+├── .gitignore
+└── README.md
 ```
 
-start docker:
+## How It Works
+
+The basic workflow is:
+
+```text
+QGroundControl telemetry logs
+        ↓
+cleaned CSV files
+        ↓
+Python import scripts
+        ↓
+InfluxDB time-series database
+        ↓
+Grafana dashboard
+```
+
+The map is reconstructed from GPS latitude and longitude points. Other panels use cleaned telemetry fields such as speed, heading, altitude, and battery voltage.
+
+## Setup Instructions
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/YOUR-USERNAME/blueboat-telemetry-dashboard.git
+cd blueboat-telemetry-dashboard
+```
+
+### 2. Create the environment file
+
+Copy the example environment file:
+
+```bash
+cp .env.example .env
+```
+
+Then edit `.env` with your local InfluxDB settings.
+
+Example values:
+
+```bash
+INFLUX_ORG=caltech_lab
+INFLUX_BUCKET=qgc_data
+INFLUX_TOKEN=change_this_token
+```
+
+The real `.env` file is ignored by Git and should not be uploaded.
+
+### 3. Start Docker containers
 
 ```bash
 docker compose up -d
 ```
 
-stop docker:
+This starts:
+
+* InfluxDB at `http://localhost:8086`
+* Grafana at `http://localhost:3000`
+
+To stop the containers:
 
 ```bash
 docker compose down
 ```
 
-full reset if setup gets weird:
+To fully reset the local database and Grafana volumes:
 
 ```bash
 docker compose down -v
 docker compose up -d
 ```
 
-open pages:
+Use the full reset only when you are okay with deleting local InfluxDB and Grafana data.
 
-* influxdb: `http://localhost:8086`
-* grafana: `http://localhost:3000`
+## Python Setup
 
-## python setup
-
-create venv if needed:
+Create a virtual environment:
 
 ```bash
 python3 -m venv .venv
 ```
 
-turn on:
+Activate it:
 
 ```bash
 source .venv/bin/activate
 ```
 
-install packages:
+Install dependencies:
 
 ```bash
 python -m pip install -r requirements.txt
 ```
 
-## env vars
+## Import Telemetry Data
 
-before running importers:
-
-```bash
-export INFLUX_ORG=caltech_lab
-export INFLUX_BUCKET=qgc_data
-export INFLUX_TOKEN=change
-```
-
-## run importers
-
-main telemetry importer:
+Run the main telemetry importer:
 
 ```bash
 python scripts/import_qgc_telemetry.py
 ```
 
-battery importer:
+Run the battery telemetry importer:
 
 ```bash
 python scripts/import_battery_telemetry.py
 ```
 
-## main panels
+After importing the data, open Grafana at:
 
-* boat path
-* battery voltage
-* speed
-* heading
-* altitude
-* mission duration
-* total distance
+```text
+http://localhost:3000
+```
 
-## useful queries
+## Main Dashboard Panels
 
-### speed
+The dashboard includes:
+
+* Boat path map
+* Battery voltage over time
+* Speed over time
+* Heading over time
+* Altitude over time
+* Mission duration
+* Total distance
+
+## Example Flux Queries
+
+### Speed
 
 ```flux
 from(bucket: "qgc_data")
@@ -122,7 +200,7 @@ from(bucket: "qgc_data")
   |> filter(fn: (r) => r._field == "speed_xy")
 ```
 
-### heading
+### Heading
 
 ```flux
 from(bucket: "qgc_data")
@@ -132,7 +210,7 @@ from(bucket: "qgc_data")
   |> filter(fn: (r) => r._field == "heading_deg")
 ```
 
-### altitude
+### Altitude
 
 ```flux
 from(bucket: "qgc_data")
@@ -142,7 +220,7 @@ from(bucket: "qgc_data")
   |> filter(fn: (r) => r._field == "alt_m")
 ```
 
-### map
+### Map
 
 ```flux
 from(bucket: "qgc_data")
@@ -154,14 +232,16 @@ from(bucket: "qgc_data")
   |> keep(columns: ["_time", "lat", "lon", "speed_xy"])
 ```
 
-geomap settings:
+Grafana Geomap settings:
 
-* visualization = geomap
-* location mode = coords
-* latitude field = lat
-* longitude field = lon
+```text
+Visualization: Geomap
+Location mode: Coordinates
+Latitude field: lat
+Longitude field: lon
+```
 
-### battery voltage
+### Battery Voltage
 
 ```flux
 from(bucket: "qgc_data")
@@ -172,9 +252,7 @@ from(bucket: "qgc_data")
   |> filter(fn: (r) => r.msg_type == "SYS_STATUS")
 ```
 
-### mission duration
-
-this is the version that worked for me, then i converted it to minutes in grafana transformations:
+### Mission Duration
 
 ```flux
 gps = from(bucket: "qgc_data")
@@ -192,11 +270,11 @@ union(tables: [first_time, last_time])
   |> elapsed(unit: 1s)
 ```
 
-### total distance
+The output can be converted to minutes using Grafana transformations.
 
-for total distance i calculated it separately from the cleaned gps points and used `1.93 km`
+### Total Distance
 
-for the stat panel:
+For the current sample run, total distance was calculated separately from cleaned GPS points and displayed as a stat panel.
 
 ```flux
 import "array"
@@ -206,21 +284,21 @@ array.from(rows: [
 ])
 ```
 
-## notes
+## Notes and Limitations
 
-* this dashboard is from cleaned qgroundcontrol telemetry
-* map is reconstructed from gps
-* `alt_m` is autopilot / gps reported altitude, not sonar depth
-* battery was missing at first because i used the wrong tlog
-* once i found the correct tlog, battery voltage over time worked
+* This dashboard is based on cleaned QGroundControl telemetry data.
+* The current version is not real-time yet.
+* The map is reconstructed from GPS data.
+* `alt_m` represents autopilot/GPS reported altitude, not sonar depth.
+* Battery data depends on the correct telemetry log containing battery messages.
+* This repository should not include private tokens, raw field logs, or sensitive deployment data.
 
-## current status
+## Future Development
 
-right now this is a working prototype for telemetry review.
+A separate branch can be used for real-time dashboard development:
 
-next things i could add later:
+```bash
+git checkout -b realtime-dashboard
+```
 
-* cleaner battery summary stats
-* live / near-real-time ingestion
-* more mission summary values
-* easier comparison between runs
+Once the real-time version is stable, it can be reviewed and merged into the main branch.
