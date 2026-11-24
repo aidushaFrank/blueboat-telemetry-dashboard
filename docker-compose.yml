@@ -2,6 +2,7 @@ services:
   influxdb:
     image: influxdb:2.7
     container_name: influxdb_qgc
+    restart: unless-stopped
     ports:
       - "8086:8086"
     env_file:
@@ -11,16 +12,16 @@ services:
       - influxdb_config_qgc:/etc/influxdb2
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:11.6.1
     container_name: grafana_qgc
+    restart: unless-stopped
     ports:
       - "3000:3000"
     env_file:
       - .env
     volumes:
       - grafana_data_qgc:/var/lib/grafana
-      - ./provisioning:/etc/grafana/provisioning
-      - ./dashboards:/var/lib/grafana/dashboards
+      - ./provisioning:/etc/grafana/provisioning:ro
     depends_on:
       - influxdb
 
