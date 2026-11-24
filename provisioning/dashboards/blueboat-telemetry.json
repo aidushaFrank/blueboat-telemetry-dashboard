@@ -1,0 +1,72 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": {"type": "influxdb", "uid": "-- Grafana --"},
+      "fieldConfig": {"defaults": {"custom": {"hideFrom": {"legend": false, "tooltip": false, "viz": false}}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}}, "overrides": []},
+      "gridPos": {"h": 12, "w": 12, "x": 0, "y": 0},
+      "id": 1,
+      "options": {"basemap": {"config": {}, "name": "Layer 0", "type": "default"}, "controls": {"mouseZoom": true, "showAttribution": true, "showScale": false, "showZoom": true}, "layers": [{"config": {"showLegend": true, "style": {"color": {"fixed": "dark-green"}, "opacity": 0.8, "rotation": {"fixed": 0, "max": 360, "min": -360, "mode": "mod"}, "size": {"fixed": 5, "max": 15, "min": 2, "mode": "fixed"}}, "filterData": {"id": "byRefId", "options": "A"}, "location": {"latitude": "lat", "longitude": "lon", "mode": "coords"}, "name": "Boat track", "tooltip": true, "type": "markers"}], "tooltip": {"mode": "details"}, "view": {"allLayers": true, "id": "zero", "lat": 0, "lon": 0, "zoom": 1}},
+      "targets": [{"datasource": {"type": "influxdb", "uid": "-- Grafana --"}, "query": "from(bucket: \"qgc_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"gps_track\")\n  |> filter(fn: (r) => r.track == \"gps_track_cleaned\")\n  |> filter(fn: (r) => r._field == \"lat\" or r._field == \"lon\")\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")", "refId": "A"}],
+      "title": "Boat Track",
+      "type": "geomap"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "-- Grafana --"},
+      "fieldConfig": {"defaults": {"unit": "volt"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "id": 2,
+      "options": {"legend": {"calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "single", "sort": "none"}},
+      "targets": [{"datasource": {"type": "influxdb", "uid": "-- Grafana --"}, "query": "from(bucket: \"qgc_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"qgc_battery\")\n  |> filter(fn: (r) => r._field == \"battery_voltage_v\")", "refId": "A"}],
+      "title": "Battery Voltage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "-- Grafana --"},
+      "fieldConfig": {"defaults": {"unit": "velocityms"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "id": 3,
+      "options": {"legend": {"calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "single", "sort": "none"}},
+      "targets": [{"datasource": {"type": "influxdb", "uid": "-- Grafana --"}, "query": "from(bucket: \"qgc_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"qgc_telemetry\")\n  |> filter(fn: (r) => r._field == \"speed_xy\")", "refId": "A"}],
+      "title": "Speed",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "-- Grafana --"},
+      "fieldConfig": {"defaults": {"unit": "degree"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+      "id": 4,
+      "options": {"legend": {"calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "single", "sort": "none"}},
+      "targets": [{"datasource": {"type": "influxdb", "uid": "-- Grafana --"}, "query": "from(bucket: \"qgc_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"qgc_telemetry\")\n  |> filter(fn: (r) => r._field == \"heading_deg\")", "refId": "A"}],
+      "title": "Heading",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "-- Grafana --"},
+      "fieldConfig": {"defaults": {"unit": "lengthm"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+      "id": 5,
+      "options": {"legend": {"calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "single", "sort": "none"}},
+      "targets": [{"datasource": {"type": "influxdb", "uid": "-- Grafana --"}, "query": "from(bucket: \"qgc_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"qgc_telemetry\")\n  |> filter(fn: (r) => r._field == \"alt_m\")", "refId": "A"}],
+      "title": "Altitude",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 39,
+  "tags": ["blueboat", "telemetry"],
+  "templating": {"list": []},
+  "time": {"from": "now-24h", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "BlueBoat Telemetry",
+  "uid": "blueboat-telemetry",
+  "version": 1,
+  "weekStart": ""
+}
